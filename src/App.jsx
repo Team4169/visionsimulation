@@ -1,44 +1,62 @@
 import { useEffect } from 'react';
-
 import * as THREE from 'three';
-// import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
-// import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
-// import { VOXLoader } from 'three/examples/jsm/loaders/VOXLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 
 import SceneInit from './lib/SceneInit';
 
+export default function App() {
+  function createImageMesh(id, position, rotation) {
+    const paddedId = id.toString().padStart(5, '0');
+    const textureLoader = new THREE.TextureLoader();
+    const imageTexture = textureLoader.load(`src/tag16h5/tag16_05_${paddedId}.png`);
+    imageTexture.magFilter = THREE.NearestFilter;
+    imageTexture.minFilter = THREE.NearestFilter;
+    
+    const imageMaterial = new THREE.MeshBasicMaterial({ map: imageTexture, side: THREE.FrontSide }); // Set side to THREE.FrontSide
+    const imageGeometry = new THREE.BoxBufferGeometry(1, 1, 0.1);
+    const imageMesh = new THREE.Mesh(imageGeometry, imageMaterial);
+    imageMesh.position.set(position.x, position.y, position.z);
+    imageMesh.rotation.set(rotation.x, rotation.y, rotation.z);
 
-function App() {
+    return imageMesh;
+  }
+
+  function createTextMesh(id, position) {
+    const textGeometry = new THREE.TextGeometry(`ID: ${id}`, {
+      font: new FontLoader().load('path/to/font.json'), // Use FontLoader from the imported module
+      size: 1,
+      height: 0.1,
+    });
+    const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+    textMesh.position.set(position.x, position.y, position.z);
+
+    return textMesh;
+  }
+
   useEffect(() => {
     const test = new SceneInit('myThreeJsCanvas');
-    const axesHelper = new THREE.AxesHelper( 500 );
-    //const optionalNormalMatrix = new THREE.Matrix3().getNormalMatrix( matrix );
+    const axesHelper = new THREE.AxesHelper(20);
     test.initialize();
     test.animate();
 
-    var geo = new THREE.PlaneBufferGeometry(500, 500, 8, 8);
-    var mat = new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
-    var plane = new THREE.Mesh(geo, mat);
-    plane.rotation.x = Math.PI / 2;
-    plane.position.z = 250;
-    plane.position.x = 250;
-    test.scene.add(plane);
+    const positions = [
+      { id: 0, x: 0, y: 0, z: 0, rotation: { x: Math.PI / 2, y: 0, z: 0 } },
+      { id: 1, x: 5, y: 0, z: 0, rotation: { x: 0, y: 0, z: 0 } },
+    ];
 
-    let loadedModel;
-    const glftLoader = new GLTFLoader();
-    glftLoader.load('./assets/shiba/scene.gltf', (gltfScene) => {
-      loadedModel = gltfScene;
+    positions.forEach((position) => {
+      const imageMesh = createImageMesh(position.id, position, position.rotation);
+      test.scene.add(imageMesh);
 
-      gltfScene.scene.rotation.y = Math.PI / 8;
-      gltfScene.scene.position.y = 10;
-      gltfScene.scene.position.x = 150;
-      gltfScene.scene.position.z = 150;
-      gltfScene.scene.scale.set(10, 10, 10);
-      test.scene.add(gltfScene.scene);
+      console.log('ID:', position.id);
+
+      const textMesh = createTextMesh(position.id, { x: position.x, y: position.y - 3, z: position.z });
+      test.scene.add(textMesh);
     });
 
-    test.scene.add( axesHelper );
+    test.scene.add(axesHelper);
   }, []);
 
   return (
@@ -47,5 +65,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
