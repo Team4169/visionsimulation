@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
-import net from 'net';
 import SceneInit from './lib/SceneInit';
 
 export default function App() {
@@ -12,8 +11,8 @@ export default function App() {
     const imageTexture = textureLoader.load(`src/tag16h5/tag16_05_${paddedId}.png`);
     imageTexture.magFilter = THREE.NearestFilter;
     imageTexture.minFilter = THREE.NearestFilter;
-    
-    const imageMaterial = new THREE.MeshBasicMaterial({ map: imageTexture, side: THREE.FrontSide }); // Set side to THREE.FrontSide
+
+    const imageMaterial = new THREE.MeshBasicMaterial({ map: imageTexture, side: THREE.FrontSide });
     const imageGeometry = new THREE.BoxBufferGeometry(1, 1, 0.1);
     const imageMesh = new THREE.Mesh(imageGeometry, imageMaterial);
     imageMesh.position.set(position.x, position.y, position.z);
@@ -24,7 +23,7 @@ export default function App() {
 
   function createTextMesh(id, position) {
     const textGeometry = new THREE.TextGeometry(`ID: ${id}`, {
-      font: new FontLoader().load('path/to/font.json'), // Use FontLoader from the imported module
+      font: new FontLoader().load('path/to/font.json'),
       size: 1,
       height: 0.1,
     });
@@ -61,36 +60,44 @@ export default function App() {
 
   useEffect(() => {
     // Client configuration
-    const host = '10.41.69.29';  // Replace with the server's IP address or hostname
-    const port = 12345;          // Use the same port number as the server
+    const host = 'ws://10.41.69.29:12345'; // Use WebSocket address
+    const webSocket = new WebSocket(host);
 
-    // Create a socket
-    const clientSocket = new net.Socket();
-
-    // Connect to the server
-    clientSocket.connect(port, host, () => {
+    // WebSocket on open
+    webSocket.onopen = () => {
       console.log('Connected to the server');
-    });
+    };
 
-    // Listen for data from the server
-    clientSocket.on('data', (data) => {
-      const response = data.toString('utf-8');
-      console.log(JSON.parse(response).apriltags);
-    });
+    // WebSocket on message
+    webSocket.onmessage = (event) => {
+      console.log(event);
+      const response = JSON.parse(event.data);
+      console.log(response.apriltags);
+    };
 
-    // Listen for the connection close event
-    clientSocket.on('close', () => {
-      console.log('Connection closed');
-    });
+    webSocket.onerror = (error) => {
+      console.error('WebSocket Error:', error);
+    
+      // Additional error information
+      console.error('WebSocket readyState:', webSocket.readyState);
+      console.error('WebSocket extensions:', webSocket.extensions);
+      console.error('WebSocket protocol:', webSocket.protocol);
+    };
+    
+    // WebSocket on close
+    webSocket.onclose = (event) => {
+      console.log('Connection closed:', event);
+    
+      // Additional close information
+      console.log('WebSocket close code:', event.code);
+      console.log('WebSocket close reason:', event.reason);
+      console.log('WebSocket wasClean:', event.wasClean);
+    };
+    
 
-    // Listen for errors
-    clientSocket.on('error', (error) => {
-      console.error('Error:', error.message);
-    });
-
-    // Clean up the socket on component unmount
+    // Clean up the WebSocket on component unmount
     return () => {
-      clientSocket.destroy();
+      webSocket.close();
     };
   }, []); // The empty dependency array ensures this effect runs once on mount
 
