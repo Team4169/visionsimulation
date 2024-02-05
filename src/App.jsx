@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
-
+import net from 'net';
 import SceneInit from './lib/SceneInit';
 
 export default function App() {
@@ -58,6 +58,41 @@ export default function App() {
 
     test.scene.add(axesHelper);
   }, []);
+
+  useEffect(() => {
+    // Client configuration
+    const host = '10.41.69.29';  // Replace with the server's IP address or hostname
+    const port = 12345;          // Use the same port number as the server
+
+    // Create a socket
+    const clientSocket = new net.Socket();
+
+    // Connect to the server
+    clientSocket.connect(port, host, () => {
+      console.log('Connected to the server');
+    });
+
+    // Listen for data from the server
+    clientSocket.on('data', (data) => {
+      const response = data.toString('utf-8');
+      console.log(JSON.parse(response).apriltags);
+    });
+
+    // Listen for the connection close event
+    clientSocket.on('close', () => {
+      console.log('Connection closed');
+    });
+
+    // Listen for errors
+    clientSocket.on('error', (error) => {
+      console.error('Error:', error.message);
+    });
+
+    // Clean up the socket on component unmount
+    return () => {
+      clientSocket.destroy();
+    };
+  }, []); // The empty dependency array ensures this effect runs once on mount
 
   return (
     <div>
